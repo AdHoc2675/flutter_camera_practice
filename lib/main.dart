@@ -5,6 +5,10 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'display_and_save_image_page.dart';
+
+bool _isRearCameraSelected = true;
+
 Future<void> main() async {
   // Ensure that plugin services are initialized so that `availableCameras()`
   // can be called before `runApp()`
@@ -15,13 +19,14 @@ Future<void> main() async {
 
   // Get a specific camera from the list of available cameras.
   final firstCamera = cameras.first;
+  final secondCamera = cameras.last;
 
   runApp(
     MaterialApp(
       theme: ThemeData.dark(),
       home: TakePictureScreen(
         // Pass the appropriate camera to the TakePictureScreen widget.
-        camera: firstCamera,
+        camera: _isRearCameraSelected ? firstCamera : secondCamera,
       ),
     ),
   );
@@ -43,6 +48,7 @@ class TakePictureScreen extends StatefulWidget {
 class TakePictureScreenState extends State<TakePictureScreen> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
+
   File? _image;
   final picker = ImagePicker();
 
@@ -126,12 +132,24 @@ class TakePictureScreenState extends State<TakePictureScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           FloatingActionButton(
+            heroTag: 1,
             onPressed: () {
               getImage(ImageSource.gallery);
             },
             child: Icon(Icons.image),
           ),
           FloatingActionButton(
+            heroTag: 2,
+            onPressed: () {
+              setState(() {
+                _isRearCameraSelected = !_isRearCameraSelected;
+              });
+            },
+            child: Icon(
+                _isRearCameraSelected ? Icons.camera_front : Icons.camera_rear),
+          ),
+          FloatingActionButton(
+            heroTag: 3,
             // Provide an onPressed callback.
             onPressed: () async {
               // Take the Picture in a try / catch block. If anything goes wrong,
@@ -149,7 +167,7 @@ class TakePictureScreenState extends State<TakePictureScreen> {
                 // If the picture was taken, display it on a new screen.
                 await Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => DisplayPictureScreen(
+                    builder: (context) => DisplayAndSaveImagePage(
                       // Pass the automatically generated path to
                       // the DisplayPictureScreen widget.
                       imagePath: image.path,
@@ -165,23 +183,6 @@ class TakePictureScreenState extends State<TakePictureScreen> {
           ),
         ],
       ),
-    );
-  }
-}
-
-// A widget that displays the picture taken by the user.
-class DisplayPictureScreen extends StatelessWidget {
-  final String imagePath;
-
-  const DisplayPictureScreen({super.key, required this.imagePath});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Display the Picture')),
-      // The image is stored as a file on the device. Use the `Image.file`
-      // constructor with the given path to display the image.
-      body: Image.file(File(imagePath)),
     );
   }
 }
