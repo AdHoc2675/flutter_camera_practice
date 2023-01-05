@@ -38,6 +38,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(useMaterial3: true, colorScheme: lightColorScheme),
       darkTheme: ThemeData(useMaterial3: true, colorScheme: darkColorScheme),
       home: TakePictureScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
@@ -190,6 +191,7 @@ class TakePictureScreenState extends State<TakePictureScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Display the Picture')),
       body: _isCameraInitialized
           ? Column(
               children: [
@@ -199,10 +201,51 @@ class TakePictureScreenState extends State<TakePictureScreen>
                     Stack(
                       alignment: AlignmentDirectional.center,
                       children: [
-                        showImage(),
                         Stack(
+                          alignment: AlignmentDirectional.topEnd,
                           children: [
-                            CameraPreview(controller!),
+                            Stack(
+                              children: [
+                                CameraPreview(controller!),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(10.0),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Text(
+                                      _currentExposureOffset
+                                              .toStringAsFixed(1) +
+                                          'x',
+                                      style: TextStyle(color: Colors.black),
+                                    ),
+                                  ),
+                                ),
+                                Expanded(
+                                  child: RotatedBox(
+                                    quarterTurns: 3,
+                                    child: Container(
+                                      height: 30,
+                                      child: Slider(
+                                        value: _currentExposureOffset,
+                                        min: _minAvailableExposureOffset,
+                                        max: _maxAvailableExposureOffset,
+                                        activeColor: Colors.white,
+                                        inactiveColor: Colors.white30,
+                                        onChanged: (value) async {
+                                          setState(() {
+                                            _currentExposureOffset = value;
+                                          });
+                                          await controller!
+                                              .setExposureOffset(value);
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                             DropdownButton<ResolutionPreset>(
                               dropdownColor: Colors.black87,
                               underline: Container(),
@@ -230,39 +273,70 @@ class TakePictureScreenState extends State<TakePictureScreen>
                               },
                               hint: Text("Select item"),
                             ),
+                          ],
+                        ),
+                        showImage(),
+                      ],
+                    ),
+                    Column(
+                      children: [
+                        InkWell(
+                          onTap: () {
+                            setState(() {
+                              _isCameraInitialized = false;
+                            });
+                            onNewCameraSelected(
+                              cameras[_isRearCameraSelected ? 0 : 1],
+                            );
+                            setState(() {
+                              _isRearCameraSelected = !_isRearCameraSelected;
+                            });
+                          },
+                          child: Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              Icon(
+                                Icons.circle,
+                                color: Colors.black38,
+                                size: 60,
+                              ),
+                              Icon(
+                                _isRearCameraSelected
+                                    ? Icons.camera_front
+                                    : Icons.camera_rear,
+                                color: Colors.white,
+                                size: 30,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Slider(
+                                value: _currentZoomLevel,
+                                min: _minAvailableZoom,
+                                max: _maxAvailableZoom,
+                                activeColor: Colors.white,
+                                inactiveColor: Colors.white30,
+                                onChanged: (value) async {
+                                  setState(() {
+                                    _currentZoomLevel = value;
+                                  });
+                                  await controller!.setZoomLevel(value);
+                                },
+                              ),
+                            ),
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: Colors.black87,
                                 borderRadius: BorderRadius.circular(10.0),
                               ),
                               child: Padding(
                                 padding: const EdgeInsets.all(8.0),
                                 child: Text(
-                                  _currentExposureOffset.toStringAsFixed(1) +
-                                      'x',
-                                  style: TextStyle(color: Colors.black),
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: RotatedBox(
-                                quarterTurns: 3,
-                                child: Container(
-                                  height: 30,
-                                  child: Slider(
-                                    value: _currentExposureOffset,
-                                    min: _minAvailableExposureOffset,
-                                    max: _maxAvailableExposureOffset,
-                                    activeColor: Colors.white,
-                                    inactiveColor: Colors.white30,
-                                    onChanged: (value) async {
-                                      setState(() {
-                                        _currentExposureOffset = value;
-                                      });
-                                      await controller!
-                                          .setExposureOffset(value);
-                                    },
-                                  ),
+                                  _currentZoomLevel.toStringAsFixed(1) + 'x',
+                                  style: TextStyle(color: Colors.white),
                                 ),
                               ),
                             ),
@@ -270,101 +344,7 @@ class TakePictureScreenState extends State<TakePictureScreen>
                         ),
                       ],
                     ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Slider(
-                            value: _currentZoomLevel,
-                            min: _minAvailableZoom,
-                            max: _maxAvailableZoom,
-                            activeColor: Colors.white,
-                            inactiveColor: Colors.white30,
-                            onChanged: (value) async {
-                              setState(() {
-                                _currentZoomLevel = value;
-                              });
-                              await controller!.setZoomLevel(value);
-                            },
-                          ),
-                        ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black87,
-                            borderRadius: BorderRadius.circular(10.0),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              _currentZoomLevel.toStringAsFixed(1) + 'x',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
-                ),
-                /* Row(
-                  children: [
-                    Expanded(
-                      child: Slider(
-                        value: _currentZoomLevel,
-                        min: _minAvailableZoom,
-                        max: _maxAvailableZoom,
-                        activeColor: Colors.white,
-                        inactiveColor: Colors.white30,
-                        onChanged: (value) async {
-                          setState(() {
-                            _currentZoomLevel = value;
-                          });
-                          await controller!.setZoomLevel(value);
-                        },
-                      ),
-                    ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black87,
-                        borderRadius: BorderRadius.circular(10.0),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          _currentZoomLevel.toStringAsFixed(1) + 'x',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ],
-                ), */
-                InkWell(
-                  onTap: () {
-                    setState(() {
-                      _isCameraInitialized = false;
-                    });
-                    onNewCameraSelected(
-                      cameras[_isRearCameraSelected ? 0 : 1],
-                    );
-                    setState(() {
-                      _isRearCameraSelected = !_isRearCameraSelected;
-                    });
-                  },
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        Icons.circle,
-                        color: Colors.black38,
-                        size: 60,
-                      ),
-                      Icon(
-                        _isRearCameraSelected
-                            ? Icons.camera_front
-                            : Icons.camera_rear,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ],
-                  ),
                 ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
